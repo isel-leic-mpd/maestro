@@ -1,0 +1,41 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class Artist {
+    +getName() : String
+    +getListeners() : int
+    +getMbid() : String
+    +getUrl() : String
+    +getImage() : String
+    +getAlbums() : Iterable<Album>
+    +getTracks() : Iterable<Track>
+    +getDetail() : ArtistDetail
+}
+
+class Album {
+    +getName() : String
+    +getPlaycount() : int
+    +getMbid() : String
+    +getUrl() : String
+    +getImage() : String
+    +getTracks() : Iterable<Track>
+}
+
+class Track {
+    +getName() : String
+    +getUrl() : String
+    +getDuration() : int
+}
+
+class ArtistDetail {
+    +getSimilarArtists() : List<String>
+    +getGenres : List<String>
+    +getBioSummary : String
+}
+
+
+Artist "1" o- "*" Album : albums
+Artist "1" o- "*" Track : tracks
+Album "1" o- "*" Track : tracks
+Artist "1" o-- "1" ArtistDetail : detail
+@enduml

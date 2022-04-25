@@ -1,0 +1,5 @@
+// To declare projects as part of a multi-project build use the 'include' method
+rootProject.name = 'maestro'
+include 'maestro-util'
+include 'maestro-lazy'
+
