@@ -217,16 +217,14 @@ public class LazyQueries {
 
     /**
      * TO IMPLEMENT
-     * try implement without cycles using reduce operation
+     * hint: try implement without cycles using reduce operation
      * @param src
      * @param <T>
      * @return
      */
-    public static <T> T last(Iterable<T> src) {
-         return null;
+    public static <T> Optional<T> last(Iterable<T> src) {
+        throw new UnsupportedOperationException("last");
     }
-
-
 
 
 }
