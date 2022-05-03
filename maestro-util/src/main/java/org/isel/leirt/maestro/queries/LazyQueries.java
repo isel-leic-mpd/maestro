@@ -186,10 +186,15 @@ public class LazyQueries {
         return res;
     }
 
+    /**
+     * TO IMPLEMENT
+     * @param src
+     * @param <T>
+     * @return
+     * An optional wrapping the last sequence element or an optional empty
+     */
     public static <T> Optional<T> first(Iterable<T> src) {
-        Iterator<T> it = src.iterator();
-        if (!it.hasNext()) return Optional.empty();
-        return Optional.of(it.next());
+        throw new UnsupportedOperationException("first");
     }
 
     public static <T extends Comparable<T>> Optional<T> max(Iterable<T> src) {
@@ -220,7 +225,7 @@ public class LazyQueries {
      * hint: try implement without cycles using reduce operation
      * @param src
      * @param <T>
-     * @return
+     * @return An optional wrapping the last sequence element or an optional empty
      */
     public static <T> Optional<T> last(Iterable<T> src) {
         throw new UnsupportedOperationException("last");
