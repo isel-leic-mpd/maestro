@@ -86,7 +86,7 @@ public class MaestroServiceTest {
         assertEquals("Cold War Kids", second.getName());
         assertEquals(1, countRequest.getCount());
     }
-    
+
     @Test
     public void searchHiperAndCountAllResults() {
         CountRequest countReq = new CountRequest(new HttpRequest());

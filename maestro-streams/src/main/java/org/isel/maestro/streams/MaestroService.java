@@ -57,8 +57,6 @@ public class MaestroService {
         return null;
     }
 
-
-
     public Stream<CommonTopTrackRanks> commonTop100Tracks(String country1, String country2) {
         // TO IMPLEMENT
         return null;
@@ -80,8 +78,6 @@ public class MaestroService {
 
         return new ArtistDetail(
             similar, detail.getGenres(), detail.getBio() ) ;
-
     }
-
 
 }
