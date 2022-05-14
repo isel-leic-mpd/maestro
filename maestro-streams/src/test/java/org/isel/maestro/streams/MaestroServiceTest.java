@@ -54,6 +54,39 @@ public class MaestroServiceTest {
     /*
       Uncomment for Phase 2
 
+  @Test
+    public void search_David_Bowie_and_count_albums() {
+
+        CountRequest countRequest = new CountRequest(new HttpRequest());
+
+        MaestroService service = new MaestroService(
+            new LastfmWebApi(countRequest));
+        Stream<Artist> artists = service.searchArtist("david", 50);
+        assertEquals(0, countRequest.getCount());
+
+        Artist davidBowie =
+            artists
+            .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
+            .findFirst().get();
+
+        assertEquals(1, countRequest.getCount());
+        assertEquals("David Bowie", davidBowie.getName());
+        assertEquals(151, davidBowie.getAlbums().count());
+        assertEquals(30, countRequest.getCount());
+    }
+
+    @Test
+    public void search_ColdPlay_and_count_all_results_with_cache() {
+        CountRequest countRequest = new CountRequest(new HttpRequest());
+        MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
+        Stream<Artist> artists = service.searchArtist("cold", 30);
+        assertEquals(0, countRequest.getCount());
+
+        Artist second = artists.skip(1).findFirst().get();
+        assertEquals("Cold War Kids", second.getName());
+        assertEquals(1, countRequest.getCount());
+    }
+    
     @Test
     public void searchHiperAndCountAllResults() {
         CountRequest countReq = new CountRequest(new HttpRequest());
