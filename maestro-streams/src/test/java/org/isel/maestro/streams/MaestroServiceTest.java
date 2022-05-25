@@ -54,7 +54,7 @@ public class MaestroServiceTest {
     /*
       Uncomment for Phase 2
 
-  @Test
+@Test
     public void search_David_Bowie_and_count_albums() {
 
         CountRequest countRequest = new CountRequest(new HttpRequest());
@@ -66,12 +66,12 @@ public class MaestroServiceTest {
 
         Artist davidBowie =
             artists
-            .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
-            .findFirst().get();
+                .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
+                .findFirst().get();
 
         assertEquals(1, countRequest.getCount());
         assertEquals("David Bowie", davidBowie.getName());
-        assertEquals(151, davidBowie.getAlbums().count());
+        assertEquals(168, davidBowie.getAlbums().count());
         assertEquals(30, countRequest.getCount());
     }
 
@@ -89,100 +89,105 @@ public class MaestroServiceTest {
 
     @Test
     public void searchHiperAndCountAllResults() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
+        HttpGet httpGet = new HttpGet(new HttpRequest());
         MaestroService service = new MaestroService(
-            new LastfmWebApi(countReq));
+            new LastfmWebApi(httpGet));
         Stream<Artist> artists = service.searchArtist("hiper", 100);
-        assertEquals(0, countReq.getCount());
-        assertEquals(6, artists.count()); //JM expected was 700
-        assertEquals(25, countReq.getCount());
+        assertEquals(0, httpGet.count);
+        assertEquals(6, artists.count());
+        assertEquals(2, httpGet.count);
         artists = service.searchArtist("hiper", 100);
         Artist last = lastOf(artists).get();
-        assertEquals("Coma - Hipertrofia.(2008)", last.getName());
-        assertEquals(50, countReq.getCount());
+        assertEquals("Hi-Per", last.getName());
+        assertEquals(4, httpGet.count);
     }
 
 
     @Test
     public void searchHiperAndCountAllResultsWithCache() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
+        HttpGet httpGet = new HttpGet(new HttpRequest());
         MaestroService service = new MaestroService(
-            new LastfmWebApi(countReq));
+            new LastfmWebApi(httpGet));
         Supplier<Stream<Artist>> artists =
-            cache(service.searchArtist("hiper", 100));
-        assertEquals(0, countReq.getCount());
+                cache(service.searchArtist("hiper", 100));
+        assertEquals(0, httpGet.count);
         assertEquals(6, artists.get().count()); //JM expected was 700
-        assertEquals(2, countReq.getCount());
+        assertEquals(2, httpGet.count);
         Artist last = lastOf(artists.get()).get();
         assertEquals("Hi-Per",  last.getName());
-        assertEquals(2, countReq.getCount());
+        assertEquals(2, httpGet.count);
     }
 
 
     @Test
     public void getFirstAlbumOfMuse() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
+        HttpGet httpGet = new HttpGet(new HttpRequest());
         MaestroService service = new MaestroService(new LastfmWebApi(
-            countReq));
+            httpGet));
         Stream<Artist> artists = service.searchArtist("muse", 10);
-        assertEquals(0, countReq.getCount());
+        assertEquals(0, httpGet.count);
         Artist muse = artists.findFirst().get();
-        assertEquals(1, countReq.getCount());
+        assertEquals(1, httpGet.count);
         Stream<Album> albums = muse.getAlbums();
-        assertEquals(1, countReq.getCount());
+        assertEquals(1, httpGet.count);
         Album first = albums.findFirst().get();
-        assertEquals(2, countReq.getCount());
+        assertEquals(2, httpGet.count);
         assertEquals("Black Holes and Revelations", first.getName());
     }
 
     @Test
-    public void get58bumsOfMuse() {
+    public void get58AlbumsOfMuse() {
         long startTime = System.currentTimeMillis();
-        CountRequest countReq = new CountRequest(new HttpRequest());
+        HttpGet httpGet = new HttpGet(new HttpRequest());
         MaestroService service =
-            new MaestroService(new LastfmWebApi(countReq));
+            new MaestroService(new LastfmWebApi(httpGet));
         Artist muse = service.searchArtist("muse", 10).findFirst().get();
         Stream<Album> albums = muse.getAlbums().limit(111);
         long endTime = System.currentTimeMillis();
 
         System.out.println("done in " + (endTime-startTime) + " ms!");
         assertEquals(58, albums.count());
-        assertEquals(4, countReq.getCount());
+        assertEquals(9, httpGet.count);
     }
 
 
 
     @Test
     public void get42thTrackOfMuse() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
+        HttpGet httpGet = new HttpGet(new HttpRequest());
         MaestroService service = new MaestroService(new LastfmWebApi(
-            countReq));
+            httpGet));
         Stream<Track> tracks =
-            service.searchArtist("muse", 10)
-                   .findFirst().get()
-                   .getTracks();
-        assertEquals(1, countReq.getCount()); // 1 for artist + 0 for tracks because it fetches lazily
-        int[] count={42};
+               service.searchArtist("muse", 10)
+                       .findFirst().get()
+                       .getTracks();
+        assertEquals(1, httpGet.count); // 1 for artist + 0 for tracks because it fetches lazily
+
         Track track = tracks
-            .peek(t -> System.out.println("before skip"))
-            .skip(42)
-            .peek(t -> System.out.println("after skip"))
+                .skip(42)
+                .findFirst()
+                .get(); // + 1 to getAlbums + 4 to get tracks of first 4 albums.
 
-            .findFirst()
-            .get(); // + 1 to getAlbums + 4 to get tracks of first 4 albums.
-
-        assertEquals(6, countReq.getCount());
+        assertEquals(6, httpGet.count);
         assertEquals("MK Ultra", track.getName());
     }
 
+
+
+
     @Test
-    void get_top_100_tracks_in_portugal() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
-        LastfmWebApi api = new LastfmWebApi(countReq);
+    void get_second_song_on_top_100_tracks_in_portugal() {
+        HttpGet httpGet = new HttpGet(new HttpRequest());
+        LastfmWebApi api = new LastfmWebApi(httpGet);
         MaestroService service = new MaestroService(api);
 
-        service.getTop100("Portugal")
-               .forEach(System.out::println);
+        String second = service.getTop100("Portugal")
+        .skip(1)
+        .findFirst()
+        .map(tr -> tr.getName())
+        .orElse("Unknown");
+
+        assertEquals("Do I Wanna Know?", second);
     }
 
      */
@@ -190,36 +195,36 @@ public class MaestroServiceTest {
     /*
      Uncomment for phase 4
 
-    @Test
+     @Test
     void get_similar_top_tracks_between_portugal_and_spain() {
-        CountRequest countReq = new CountRequest(new HttpRequest());
-        LastfmWebApi api = new LastfmWebApi(countReq);
+        HttpGet httpGet = new HttpGet(new HttpRequest());
+        LastfmWebApi api = new LastfmWebApi(httpGet);
         MaestroService service = new MaestroService(api);
         CommonTopTrackRanks firstExpected =
             new CommonTopTrackRanks("The Less I Know the Better",
                 "Tame Impala", 1, 3);
 
         CommonTopTrackRanks lastExpected =
-            new CommonTopTrackRanks("Sex on Fire",
-                "Kings of Leon", 97, 25);
+            new CommonTopTrackRanks("" +
+                "Somebody Told Me", "The Killers", 100, 92);
 
         var portugalTop = service.getTop100("Portugal")
-                                 .limit(100);
+               .limit(100);
 
         var spainTop = service.getTop100("Spain")
-                              .limit(100);
+                                 .limit(100);
 
         var topCommons = intersection(
-            portugalTop,
-            spainTop,
-            (tr1, tr2) ->
-                tr1.getName().equals(tr2.getName()) &&
-                    tr1.getArtistMbid().equals(tr2.getArtistMbid()),
-            (tr1, tr2) -> new CommonTopTrackRanks(
-                tr1.getName(),
-                tr1.getArtistName(),
-                tr1.getRank(),
-                tr2.getRank()))
+                    portugalTop,
+                     spainTop,
+                     (tr1, tr2) ->
+                         tr1.getName().equals(tr2.getName()) &&
+                         tr1.getArtistMbid().equals(tr2.getArtistMbid()),
+                     (tr1, tr2) -> new CommonTopTrackRanks(
+                                        tr1.getName(),
+                                        tr1.getArtistName(),
+                                        tr1.getRank(),
+                                        tr2.getRank()))
             .collect(toList());
 
         //topCommons.forEach(System.out::println);
@@ -236,7 +241,7 @@ public class MaestroServiceTest {
 
         var similars =
             service.commonArtists("Bryan+Ferry","David+Bowie" )
-                   .collect(toList());
+            .collect(toList());
 
 
         assertEquals(1, similars.size());
