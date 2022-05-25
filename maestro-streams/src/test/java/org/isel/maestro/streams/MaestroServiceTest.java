@@ -89,86 +89,86 @@ public class MaestroServiceTest {
 
     @Test
     public void searchHiperAndCountAllResults() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
+        CountRequest countReq = new CountRequest(new HttpRequest());
         MaestroService service = new MaestroService(
-            new LastfmWebApi(httpGet));
+            new LastfmWebApi(countReq));
         Stream<Artist> artists = service.searchArtist("hiper", 100);
-        assertEquals(0, httpGet.count);
+        assertEquals(0, countReq.getCount());
         assertEquals(6, artists.count());
-        assertEquals(2, httpGet.count);
+        assertEquals(2, countReq.getCount());
         artists = service.searchArtist("hiper", 100);
         Artist last = lastOf(artists).get();
         assertEquals("Hi-Per", last.getName());
-        assertEquals(4, httpGet.count);
+        assertEquals(4, countReq.getCount());
     }
 
 
     @Test
     public void searchHiperAndCountAllResultsWithCache() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
+        CountRequest countReq = new CountRequest(new HttpRequest());
         MaestroService service = new MaestroService(
-            new LastfmWebApi(httpGet));
+            new LastfmWebApi(countReq));
         Supplier<Stream<Artist>> artists =
                 cache(service.searchArtist("hiper", 100));
-        assertEquals(0, httpGet.count);
+        assertEquals(0, countReq.getCount());
         assertEquals(6, artists.get().count()); //JM expected was 700
-        assertEquals(2, httpGet.count);
+        assertEquals(2, countReq.getCount());
         Artist last = lastOf(artists.get()).get();
         assertEquals("Hi-Per",  last.getName());
-        assertEquals(2, httpGet.count);
+        assertEquals(2, countReq.getCount());
     }
 
 
     @Test
     public void getFirstAlbumOfMuse() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
+        CountRequest countReq = new CountRequest(new HttpRequest());
         MaestroService service = new MaestroService(new LastfmWebApi(
-            httpGet));
+            countReq));
         Stream<Artist> artists = service.searchArtist("muse", 10);
-        assertEquals(0, httpGet.count);
+        assertEquals(0, countReq.getCount());
         Artist muse = artists.findFirst().get();
-        assertEquals(1, httpGet.count);
+        assertEquals(1, countReq.getCount());
         Stream<Album> albums = muse.getAlbums();
-        assertEquals(1, httpGet.count);
+        assertEquals(1, countReq.getCount());
         Album first = albums.findFirst().get();
-        assertEquals(2, httpGet.count);
+        assertEquals(2, countReq.getCount());
         assertEquals("Black Holes and Revelations", first.getName());
     }
 
     @Test
     public void get58AlbumsOfMuse() {
         long startTime = System.currentTimeMillis();
-        HttpGet httpGet = new HttpGet(new HttpRequest());
+        CountRequest countReq = new CountRequest(new HttpRequest());
         MaestroService service =
-            new MaestroService(new LastfmWebApi(httpGet));
+            new MaestroService(new LastfmWebApi(countReq));
         Artist muse = service.searchArtist("muse", 10).findFirst().get();
         Stream<Album> albums = muse.getAlbums().limit(111);
         long endTime = System.currentTimeMillis();
 
         System.out.println("done in " + (endTime-startTime) + " ms!");
         assertEquals(58, albums.count());
-        assertEquals(9, httpGet.count);
+        assertEquals(9, countReq.getCount());
     }
 
 
 
     @Test
     public void get42thTrackOfMuse() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
+        CountRequest countReq = new CountRequest(new HttpRequest());
         MaestroService service = new MaestroService(new LastfmWebApi(
-            httpGet));
+            countReq));
         Stream<Track> tracks =
                service.searchArtist("muse", 10)
                        .findFirst().get()
                        .getTracks();
-        assertEquals(1, httpGet.count); // 1 for artist + 0 for tracks because it fetches lazily
+        assertEquals(1, countReq.getCount()); // 1 for artist + 0 for tracks because it fetches lazily
 
         Track track = tracks
                 .skip(42)
                 .findFirst()
                 .get(); // + 1 to getAlbums + 4 to get tracks of first 4 albums.
 
-        assertEquals(6, httpGet.count);
+        assertEquals(6, countReq.getCount());
         assertEquals("MK Ultra", track.getName());
     }
 
@@ -177,8 +177,8 @@ public class MaestroServiceTest {
 
     @Test
     void get_second_song_on_top_100_tracks_in_portugal() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
-        LastfmWebApi api = new LastfmWebApi(httpGet);
+        CountRequest countReq = new CountRequest(new HttpRequest());
+        LastfmWebApi api = new LastfmWebApi(countReq);
         MaestroService service = new MaestroService(api);
 
         String second = service.getTop100("Portugal")
@@ -197,8 +197,8 @@ public class MaestroServiceTest {
 
      @Test
     void get_similar_top_tracks_between_portugal_and_spain() {
-        HttpGet httpGet = new HttpGet(new HttpRequest());
-        LastfmWebApi api = new LastfmWebApi(httpGet);
+        CountRequest countReq = new CountRequest(new HttpRequest());
+        LastfmWebApi api = new LastfmWebApi(countReq);
         MaestroService service = new MaestroService(api);
         CommonTopTrackRanks firstExpected =
             new CommonTopTrackRanks("The Less I Know the Better",
