@@ -64,14 +64,17 @@ public class MaestroServiceTest {
         Stream<Artist> artists = service.searchArtist("david", 50);
         assertEquals(0, countRequest.getCount());
 
-        Artist davidBowie =
+        Optional<Artist> davidBowieOrEmpty =
             artists
                 .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
-                .findFirst().get();
+                .findFirst();
+        assertTrue(!davidBowieOrEmpty.isEmpty());
+
+        Artist davidBowie = davidBowieOrEmpty.get();
 
         assertEquals(1, countRequest.getCount());
         assertEquals("David Bowie", davidBowie.getName());
-        assertEquals(168, davidBowie.getAlbums().count());
+        assertEquals(151, davidBowie.getAlbums().count());
         assertEquals(30, countRequest.getCount());
     }
 
