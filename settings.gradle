@@ -3,4 +3,5 @@ rootProject.name = 'maestro'
 include 'maestro-util'
 include 'maestro-lazy'
 include 'maestro-streams'
+include 'maestro-async'
 
