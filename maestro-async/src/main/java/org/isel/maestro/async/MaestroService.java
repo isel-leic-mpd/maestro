@@ -59,7 +59,6 @@ public class MaestroService {
         this(new LastfmWebApi(new AsyncHttpRequest()));
     }
 
-
     public CompletableFuture<Stream<Artist>> searchArtistPar(String name, int max) {
         int npages = (max -1) / LastfmWebApi.PAGE_SIZE + 1;
         return
@@ -75,8 +74,6 @@ public class MaestroService {
             )
             .thenApply ( l ->  l.stream().map(this::dtoToArtist));
     }
-
-
 
     // This implementation, although correct, can be enhanced.
     // We will do this in next lecture
@@ -155,7 +152,6 @@ public class MaestroService {
 
     private ArtistDetail dtoToArtistDetail(ArtistDetailDto dto) {
 
-
         List<String> similar =
                 dto.getSimilarArtists()
                 .stream()
@@ -177,7 +173,6 @@ public class MaestroService {
     }
 
     private Track dtoToTrack(TrackDto dto) {
-
         return new Track(dto.getName(), dto.getUrl(), dto.getDuration());
     }
 

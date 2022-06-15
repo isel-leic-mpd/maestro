@@ -30,8 +30,6 @@
 
 package org.isel.maestro.async;
 
-
-
 import org.isel.maestro.async.model.Album;
 import org.isel.maestro.async.model.Artist;
 import org.isel.maestro.async.model.Track;
@@ -45,8 +43,6 @@ import java.util.concurrent.CompletableFuture;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-
 
 
 public class MaestroServiceTest {
@@ -68,7 +64,7 @@ public class MaestroServiceTest {
     }
 
     private <T> Optional<T> lastOf(Stream<T> stream) {
-        return stream.reduce((a,b) -> b);
+        return stream.reduce((a, b) -> b);
     }
 
     @Test
@@ -80,15 +76,20 @@ public class MaestroServiceTest {
         assertEquals(60, artists.count());
     }
 
-    /*
-    public void search_David_Bowie_and_count_albums() {
+   /*
+   @Test
+    public void search_David_Bowie_and_count_albums_parallel_search() {
 
         CountRequest countRequest = new CountRequest( );
         MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
-        Stream<Artist> artists = service.searchArtistSerial("david", 50).join();
+        List<Artist> artists =
+            service.searchArtistPar("david", 50)
+           .join()
+            .collect(Collectors.toList());
 
         Optional<Artist> davidBowieOrEmpty =
             artists
+                .stream()
                 .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
                 .findFirst();
         assertTrue(!davidBowieOrEmpty.isEmpty());
@@ -96,6 +97,59 @@ public class MaestroServiceTest {
         Artist davidBowie = davidBowieOrEmpty.get();
 
         assertEquals(2, countRequest.getCount());
+        assertEquals(50, artists.size());
+        assertEquals("David Bowie", davidBowie.getName());
+        assertEquals(200, davidBowie.getAlbums().join().count());
+        assertEquals(6, countRequest.getCount());
+    }
+
+    @Test
+    public void search_David_Bowie_and_count_albums_parallel_allof_search() {
+
+        CountRequest countRequest = new CountRequest( );
+        MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
+        List<Artist> artists =
+            service.searchArtistPar2("david", 50)
+                   .join()
+                   .collect(Collectors.toList());
+
+        Optional<Artist> davidBowieOrEmpty =
+            artists
+                .stream()
+                .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
+                .findFirst();
+        assertTrue(!davidBowieOrEmpty.isEmpty());
+
+        Artist davidBowie = davidBowieOrEmpty.get();
+
+        assertEquals(2, countRequest.getCount());
+        assertEquals(50, artists.size());
+        assertEquals("David Bowie", davidBowie.getName());
+        assertEquals(200, davidBowie.getAlbums().join().count());
+        assertEquals(6, countRequest.getCount());
+    }
+
+    @Test
+    public void search_David_Bowie_and_count_albums_serial_search() {
+
+        CountRequest countRequest = new CountRequest( );
+        MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
+        List<Artist> artists =
+            service.searchArtistSerial("david", 50)
+                   .join()
+                   .collect(Collectors.toList());
+
+        Optional<Artist> davidBowieOrEmpty =
+            artists
+                .stream()
+                .dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
+                .findFirst();
+        assertTrue(!davidBowieOrEmpty.isEmpty());
+
+        Artist davidBowie = davidBowieOrEmpty.get();
+
+        assertEquals(2, countRequest.getCount());
+        assertEquals(50, artists.size());
         assertEquals("David Bowie", davidBowie.getName());
         assertEquals(200, davidBowie.getAlbums().join().count());
         assertEquals(6, countRequest.getCount());
@@ -113,23 +167,26 @@ public class MaestroServiceTest {
     }
 
     @Test
-    public void searchHiperAndCountAllResultsParallelTest() {
+    public void searchHiperAndDavidAndCountAllResultsParallelTest() {
 
         CountRequest httpGet = new CountRequest();
         MaestroService service =
                 new MaestroService(new LastfmWebApi( httpGet));
 
         long start = System.currentTimeMillis();
-        Stream<Artist> artists =
-                service.searchArtistPar("hiper", 100).join();
+        CompletableFuture<Stream<Artist>> artistsHiperFut =
+                service.searchArtistPar("hiper", 100);
+        CompletableFuture<Stream<Artist>> artistsDavidFut =
+            service.searchArtistPar("david", 100);
 
-        assertEquals(100, artists.count());
-        assertEquals(4, httpGet.count);
-        artists = service.searchArtistPar("hiper", 100).join();
-        Artist last = lastOf(artists).get();
-        assertEquals("Hipertensão Internacional", last.getName());
+
+        assertEquals(100, artistsHiperFut.join().count());
         assertEquals(8, httpGet.count);
-        System.out.printf("done in %dms", System.currentTimeMillis()-start);
+
+        Artist last = lastOf(artistsDavidFut.join()).get();
+        assertEquals("David Morales", last.getName());
+        assertEquals(8, httpGet.count);
+        System.out.printf("done in %dms\n", System.currentTimeMillis()-start);
     }
 
 
@@ -170,7 +227,7 @@ public class MaestroServiceTest {
             .findFirst()
             .get(); // + 1 to getAlbums + 4 to get tracks of first 4 albums.
 
-        assertEquals(45, countRequest.getCount());
+        assertEquals(7, countRequest.getCount());
         assertEquals("MK Ultra", track.getName());
     }
 
@@ -178,18 +235,65 @@ public class MaestroServiceTest {
 
     @Test
     void get_second_song_on_top_100_tracks_in_portugal() {
-        CountRequest httpGet = new CountRequest();
-        LastfmWebApi api = new LastfmWebApi(httpGet);
+        CountRequest countRequest = new CountRequest();
+        LastfmWebApi api = new LastfmWebApi(countRequest);
         MaestroService service = new MaestroService(api);
 
-        String second = service.getTop100("Portugal").join()
+        String second = service.getTop100("Portugal")
+                               .join()
                                .skip(1)
                                .findFirst()
                                .map(tr -> tr.getName())
                                .orElse("Unknown");
 
+        assertEquals(2, countRequest.getCount());
         assertEquals("Do I Wanna Know?", second);
+
+        int[] index = {0};
+
+        service.getTop100("Portugal")
+            .join()
+            .forEach( tr -> System.out.printf("%3d: %s\n", ++index[0], tr));
     }
 
-*/
+     @Test
+    public void get_artists_common_to_bowie_and_ferry() {
+        CountRequest countRequest = new CountRequest();
+        MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
+
+        var davidBowie =
+            service.searchArtistPar("David+Bowie", 10)
+                   .thenApply(s ->
+                       s.dropWhile(a -> !a.getName().equalsIgnoreCase("David Bowie"))
+                        .findFirst())
+                   .join();
+
+
+        var bryanFerry =
+            service.searchArtistPar("Bryan+Ferry", 10)
+                   .thenApply(s ->
+                       s.dropWhile(a -> !a.getName().equalsIgnoreCase("Bryan Ferry"))
+                        .findFirst())
+                   .join();
+        assertTrue(davidBowie.isPresent());
+        assertTrue(bryanFerry.isPresent());
+
+        var davidSimilars  =
+            davidBowie.get().getDetail().join().getSimilarArtists();
+        var bryanSimilars  =
+            bryanFerry.get().getDetail().join().getSimilarArtists();
+
+        for (String davidSimilar : davidSimilars) {
+            System.out.println(davidSimilar);
+        }
+        System.out.println();
+        for (String bryanSimilar : bryanSimilars) {
+            System.out.println(bryanSimilar);
+        }
+
+        assertEquals(davidSimilars.get(4), bryanSimilars.get(0));
+    }
+     */
+
+
 }
