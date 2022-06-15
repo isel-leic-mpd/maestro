@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -71,6 +72,15 @@ public class MaestroServiceTest {
     }
 
     @Test
+    public void search_David_artists() {
+
+        CountRequest countRequest = new CountRequest();
+        MaestroService service = new MaestroService(new LastfmWebApi(countRequest));
+        Stream<Artist> artists = service.searchArtistPar("david", 50).join();
+        assertEquals(60, artists.count());
+    }
+
+    /*
     public void search_David_Bowie_and_count_albums() {
 
         CountRequest countRequest = new CountRequest( );
@@ -181,5 +191,5 @@ public class MaestroServiceTest {
         assertEquals("Do I Wanna Know?", second);
     }
 
-
+*/
 }

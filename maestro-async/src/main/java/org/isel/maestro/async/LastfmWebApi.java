@@ -42,6 +42,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 
 public class LastfmWebApi {
@@ -101,8 +102,33 @@ public class LastfmWebApi {
 
     public CompletableFuture<List<ArtistDto>> searchArtist(String name, int page) {
         String path = String.format(LASTFM_SEARCH, name, page);
-        // TO COMPLETE
-        return null;
+
+        return
+            request.getAsync(path)
+            .thenApply( jsonText ->
+
+                    gson.fromJson(jsonText, SearchArtistDto.class)
+                        .getResults()
+                        .getArtistMatches()
+            );
+
+    }
+
+    public CompletableFuture<List<ArtistDto>> searchArtistFiltered(String name, int page) {
+        String path = String.format(LASTFM_SEARCH, name, page);
+
+        return
+            request.getAsync(path)
+                   .thenApply( jsonText ->
+
+                       gson.fromJson(jsonText, SearchArtistDto.class)
+                           .getResults()
+                           .getArtistMatches()
+                           .stream()
+                           .filter(a -> a.getMbid() != null && !a.getMbid().isEmpty())
+                           .collect(Collectors.toList())
+                   );
+
     }
 
     public CompletableFuture<List<AlbumDto>> getAlbums(String artistMbid, int page) {
@@ -123,9 +149,12 @@ public class LastfmWebApi {
 
     public CompletableFuture<ArtistDetailDto> getArtistInfo(String artistMbid) {
         String path = String.format(LASTFM_ARTIST_INFO, artistMbid);
-        // TO COMPLETE
-        return null;
 
+        return request.getAsync(path)
+            .thenApply(jsonText ->
+                gson.fromJson(jsonText, ArtistDetailQueryDto.class)
+                    .getInfo()
+            );
     }
 
     public CompletableFuture<List<TrackRankDto>> getTopTracks(String country, int page)  {

@@ -36,14 +36,14 @@ import org.isel.maestro.async.dto.*;
 import org.isel.maestro.async.model.*;
 import org.isel.maestro.async.utils.requests.AsyncHttpRequest;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.of;
+
 
 
 public class MaestroService {
@@ -61,19 +61,72 @@ public class MaestroService {
 
 
     public CompletableFuture<Stream<Artist>> searchArtistPar(String name, int max) {
-        // TO IMPLEMENT
-        return null;
+        int npages = (max -1) / LastfmWebApi.PAGE_SIZE + 1;
+        return
+            IntStream.rangeClosed(1, npages)
+            .mapToObj(page -> api.searchArtist(name, page))
+            .reduce(CompletableFuture.completedFuture(List.of()),
+                // Note that the lambda passed to thenCombine modifies
+                // the received list. This should no be done in general, that is
+                // the objects processed in the lambda should be seen as immutables
+                // ans instead we should build other objects instead of modify the
+                // passed ones. We see in next lecture hot to resolve this
+                (cf1, cf2) -> cf1.thenCombine(cf2, (l1,l2) -> { l1.addAll(l2); return l1; })
+            )
+            .thenApply ( l ->  l.stream().map(this::dtoToArtist));
+    }
+
+
+
+    // This implementation, although correct, can be enhanced.
+    // We will do this in next lecture
+    public CompletableFuture<Stream<Artist>> searchArtistPar2(String name, int max) {
+        int npages = (max -1) / LastfmWebApi.PAGE_SIZE + 1;
+
+        var futures = IntStream.rangeClosed(1, npages)
+                 .mapToObj(page -> api.searchArtist(name, page))
+                 .toArray(sz -> new CompletableFuture[sz]);
+
+        return
+        CompletableFuture.allOf(futures)
+        .thenApply(__ ->
+            Arrays.stream(futures)
+                .map(cf -> (List<ArtistDto>) cf.join())
+                .flatMap(l -> l.stream())
+                .map(this::dtoToArtist)
+        );
+    }
+
+    private CompletableFuture<Stream<Artist>>
+        searchArtistSerialAux(String name,
+                              int max,
+                              int page,
+                              Stream<Artist> acc) {
+        if (page == max) {
+            return CompletableFuture.completedFuture(acc);
+        }
+        else {
+            return
+            api.searchArtist(name, page)
+            .thenCompose(list -> {
+                var newAcc =
+                    Stream.concat(acc, list.stream().map(this::dtoToArtist));
+                return searchArtistSerialAux(name, max, page + 1, newAcc);
+            });
+        }
     }
 
     public CompletableFuture<Stream<Artist>>
     searchArtistSerial(String name, int max) {
-        // TO IMPLEMENT
-        return null;
+        int npages = (max -1) / LastfmWebApi.PAGE_SIZE + 1;
+
+        return searchArtistSerialAux(name, npages, 1, Stream.empty());
     }
 
     public CompletableFuture<ArtistDetail>  getArtistDetail(String artistMbid) {
-        // TO IMPLEMENT
-        return null;
+       return
+            api.getArtistInfo(artistMbid)
+                .thenApply( this::dtoToArtistDetail);
     }
 
 
@@ -100,6 +153,18 @@ public class MaestroService {
         return null;
     }
 
+    private ArtistDetail dtoToArtistDetail(ArtistDetailDto dto) {
+
+
+        List<String> similar =
+                dto.getSimilarArtists()
+                .stream()
+                .map(detailDto -> detailDto.getName())
+                .collect(toList());
+
+        return new ArtistDetail(
+            similar, dto.getGenres(), dto.getBio() ) ;
+    }
 
     private Artist dtoToArtist(ArtistDto dto) {
         // TO IMPLEMENT
